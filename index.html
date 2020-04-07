@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="Simple simulator of the effect of lockdown on the spreading of a virus."/>
+    <meta name="keywords" content="lockdown, virus, simulation"/>
+    <title>Lockdown simulator</title>
+    <style>
+        div {
+            padding: 5px;
+        }
+
+        label {
+            margin-left: 5px;
+            margin-right: 2px;
+        }
+
+        #counter {
+            padding: 0;
+            font-size: smaller;
+        }
+
+        .block {
+            border: 1px solid darkgray;
+            margin-bottom: 5px;
+        }
+
+        .block_head {
+            font-style: italic;
+            padding: 0;
+        }
+
+        .radio {
+            border: lightgray solid 1px;
+            border-radius: 3px;
+            display: inline-block;
+            padding: 0;
+        }
+    </style>
+</head>
+<body style="height: 100%; width: 100%; background-color:darkgray;" onload="ready()">
+
+<div style="display: flex">
+    <canvas id="simcanvas" style="border:1px solid #444444;background-color: white;">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <div id="side"
+         style="width: auto; border: 1px solid #444444;background-color: white; margin-left:10px;">
+        <div class="block">
+            <canvas id="plotcanvas" style="border:1px solid #444444;background-color: white; width: 100%;">
+                Your browser does not support the HTML5 canvas tag.
+            </canvas>
+            <div><label for="alive_count">Alive</label><input size="5" id="alive_count" type="text"
+                                                                            readonly/>
+                <label for="never_sick_count">Never sick <span
+                        style="background-color: #F0C200;">&nbsp;&nbsp;&nbsp;</span></label>
+                <input size="5" id="never_sick_count" type="text" readonly/>
+            </div>
+            <div><label for="sick_count">Sick <span
+                    style="background-color: #E2010E;">&nbsp;&nbsp;&nbsp;</span></label><input
+                    id="sick_count" size="5" type="text" readonly/>
+                <label for="sick_with_symptoms_count">with symptoms <span
+                        style="background-color: #FB55FF;">&nbsp;&nbsp;&nbsp;</span></label>
+                <input id="sick_with_symptoms_count" size="5" type="text" readonly/>
+            </div>
+            <div>
+                <label for="immune_count">Immune <span
+                        style="background-color: #B3E0B9;">&nbsp;&nbsp;&nbsp;</span></label>
+                <input id="immune_count" size="5" type="text" readonly/>
+                <label for="dead_count">Dead<span style="background-color: #363636;">&nbsp;&nbsp;&nbsp;</span></label>
+                <input id="dead_count" size="5" type="text" readonly/>
+            </div>
+            <div>
+                <label for="r_zero">R<sub>0</sub></label><input id="r_zero" size="5" type="text" readonly/>
+                <label for="total_time">Tempo</label><input id="total_time" size="5" type="text" readonly/>
+            </div>
+        </div>
+        <div class="block">
+            <div class="block_head">Initial simulation parameters (requires restart):</div>
+            <div><label for="population">Population</label>
+                <input id="population" type="number" style="width: 4em;" value="1000" min="100" max="10000" step="100"/>
+                <label for="sickness_duration">Sickness duration</label>
+                <input id="sickness_duration" type="number" style="width: 3em;" value="30" min="2" max="500" step="1"/>
+            </div>
+            <div>
+                <label for="death_prob">Death probability</label>
+                <input id="death_prob" style="width: 4em;" type="number" value="0.05" min="0" max="1" step="0.01"/>
+            </div>
+            <button id="restart" onclick="reset()">Restart</button>
+        </div>
+        <div class="block">
+            <div class="block_head">Live simulation parameters (immediate effect):</div>
+            <div>
+                <label>Lockdown:</label>
+                <div class="radio">
+                    <label for="no_lockdown">None</label>
+                    <input id="no_lockdown" name="lockdown" checked="checked" type="radio" value="None"/>
+                </div>
+                <div class="radio">
+                    <label for="soft_lockdown">Soft</label>
+                    <input id="soft_lockdown" name="lockdown" type="radio" value="Soft"/>
+                </div>
+                <div class="radio">
+                    <label for="hard_lockdown">Hard</label>
+                    <input id="hard_lockdown" name="lockdown" type="radio" value="Hard"/>
+                </div>
+            </div>
+            <div>
+                <label>Contagiousness:</label>
+                <div class="radio">
+                    <label for="high_contagiousness">
+                        <abbr title="60% by asymptomatic, 10% by by symptomatic">High</abbr>
+                    </label>
+                    <input id="high_contagiousness" name="contagiousness" checked="checked" type="radio" value="High"/>
+                </div>
+                <div class="radio">
+                    <label for="medium_contagiousness">
+                        <abbr title="20% by asymptomatic, 3% by symptomatic">Mild</abbr>
+                    </label>
+                    <input id="medium_contagiousness" name="contagiousness" type="radio" value="Mid"/>
+                </div>
+                <div class="radio">
+                    <label for="low_contagiousness">
+                        <abbr title="10% by asymptomatic, 0% by symptomatic">Low</abbr>
+                    </label>
+                    <input id="low_contagiousness" name="contagiousness" type="radio" value="Low"/>
+                </div>
+            </div>
+            <div>
+                <button id="pause" onclick="pause()">Pause</button>
+                <button id="vaccinate" onclick="vaccinate()">Vaccinate</button>
+            </div>
+        </div>
+        <div id="counter">
+            <a href="https://twitter.com/aesuli">Author</a> -
+            <a href="https://github.com/aesuli/lockdownsimulator">Source</a> - Language:
+            <a href="index.html">En</a>,
+            <a href="index_it.html">It</a>
+        </div>
+    </div>
+</div>
+<script>
+    const HEALTY_STATE = 0;
+    const SICK_STATE = 1;
+    const IMMUNE_STATE = 2;
+    const DEAD_STATE = 3;
+
+    const SICK_SYMPTOMS_COLOR = 'rgb(251,85,255)';
+    const SICK_NO_SYMPTOMS_COLOR = 'rgb(226,1,14)';
+    const HEALTY_COLOR = 'rgb(240,194,0)';
+    const IMMUNE_COLOR = 'rgb(179,224,185)';
+    const DEAD_COLOR = 'rgb(54,54,54)';
+
+    let sickness_duration = null;
+    let person_count = null;
+    let death_prob = null;
+
+    let total_time = null;
+
+    function mobility_factor() {
+        if (document.getElementById('no_lockdown').checked)
+            return 3;
+        else if (document.getElementById('soft_lockdown').checked)
+            return 2;
+        else if (document.getElementById('hard_lockdown').checked)
+            return 1;
+    }
+
+    function contagion_by_asymptomatic_prob() {
+        if (document.getElementById('high_contagiousness').checked)
+            return 0.6;
+        else if (document.getElementById('medium_contagiousness').checked)
+            return 0.2;
+        else if (document.getElementById('low_contagiousness').checked)
+            return 0.1;
+    }
+
+    function contagion_by_symptomatic_prob() {
+        if (document.getElementById('high_contagiousness').checked)
+            return 0.1;
+        else if (document.getElementById('medium_contagiousness').checked)
+            return 0.03;
+        else if (document.getElementById('low_contagiousness').checked)
+            return 0;
+    }
+
+    const steps_per_sec = 10;
+
+    class Person {
+        constructor(ctx) {
+            this._x = Math.floor(Math.random() * ctx.canvas.width);
+            this._y = Math.floor(Math.random() * ctx.canvas.height);
+            this._speed = Math.random();
+            this._last_update = total_time;
+            this._status = HEALTY_STATE;
+            this._will_die = Math.random() < death_prob;
+            this._has_symptoms = false;
+            this._no_symptoms_duration = Math.random() * sickness_duration;
+            this._direction = Math.floor(Math.random() * 4);
+            this._infected_persons = 0;
+            this._sick_time = null;
+        }
+
+        get x() {
+            return this._x;
+        }
+
+        get y() {
+            return this._y;
+        }
+
+        get status() {
+            return this._status;
+        }
+
+        got_sick() {
+            this._status = SICK_STATE;
+            this._sick_time = total_time;
+        }
+
+        get sick_time() {
+            return this._sick_time;
+        }
+
+        get has_symptoms() {
+            return this._has_symptoms;
+        }
+
+        get infected_persons() {
+            return this._infected_persons;
+        }
+
+        add_infected() {
+            this._infected_persons += 1;
+        }
+
+        update(ctx, mobility_factor, side) {
+            if (this._status === SICK_STATE) {
+                if (total_time > this._sick_time + sickness_duration * 1000) {
+                    if (this._will_die)
+                        this._status = DEAD_STATE;
+                    else {
+                        this._status = IMMUNE_STATE;
+                        this._has_symptoms = false;
+                    }
+                } else if (total_time > this._sick_time + this._no_symptoms_duration * 1000) {
+                    this._has_symptoms = true;
+                }
+            }
+
+            if (this._status === SICK_STATE) {
+                if (this._has_symptoms)
+                    ctx.fillStyle = SICK_SYMPTOMS_COLOR;
+                else
+                    ctx.fillStyle = SICK_NO_SYMPTOMS_COLOR;
+            } else if (this._status === HEALTY_STATE)
+                ctx.fillStyle = HEALTY_COLOR;
+            else if (this._status === IMMUNE_STATE)
+                ctx.fillStyle = IMMUNE_COLOR;
+            else if (this._status === DEAD_STATE)
+                ctx.fillStyle = DEAD_COLOR;
+            ctx.beginPath();
+            ctx.arc(this._x, this._y, side, 0, 2 * Math.PI);
+            ctx.fill();
+            if (this._status !== DEAD_STATE && !(this._status === SICK_STATE && this._has_symptoms)) {
+                let steps = Math.floor((total_time - this._last_update) / 1000 * steps_per_sec);
+                if (steps > 0) {
+                    for (let i = 0; i < steps; ++i) {
+                        if (Math.random() < 0.5)
+                            this._direction = (this._direction + 3) % 4;
+                        else
+                            this._direction = (this._direction + 1) % 4;
+                        if (this._direction === 0)
+                            this._x = (this._x + Math.exp(this._speed * mobility_factor)) % ctx.canvas.width;
+                        else if (this._direction === 2)
+                            this._x = (this._x - Math.exp(this._speed * mobility_factor) + ctx.canvas.width) % ctx.canvas.width;
+                        else if (this._direction === 1)
+                            this._y = (this._y + Math.exp(this._speed * mobility_factor)) % ctx.canvas.height;
+                        else if (this._direction === 3)
+                            this._y = (this._y - Math.exp(this._speed * mobility_factor) + ctx.canvas.height) % ctx.canvas.height;
+                    }
+                    this._last_update = total_time;
+                }
+            } else
+                this._last_update = total_time;
+        }
+    }
+
+    let persons = null;
+    let paused = null;
+
+    let never_sick_line = null;
+    let sick_with_symptoms_line = null;
+    let sick_line = null;
+    let dead_line = null;
+    let immune_line = null;
+    let last_plot = null;
+
+    let last_update = null;
+
+    function reset() {
+        total_time = 0;
+        last_plot = total_time;
+
+        let simcanvas = document.getElementById('simcanvas');
+        simcanvas.style.width = window.innerWidth * .7 + 'px';
+        simcanvas.style.height = window.innerHeight - 80 + 'px';
+        let ctx = simcanvas.getContext('2d');
+        ctx.canvas.width = window.innerWidth * .7;
+        ctx.canvas.height = window.innerHeight - 80;
+
+        person_count = document.getElementById('population').value;
+        sickness_duration = document.getElementById('sickness_duration').value;
+        death_prob = document.getElementById('death_prob').value;
+
+        persons = [];
+        for (let i = 0; i < person_count; ++i) {
+            persons.push(new Person(ctx));
+        }
+
+        persons[0].got_sick();
+
+        never_sick_line = [person_count];
+        sick_with_symptoms_line = [0];
+        sick_line = [1];
+        dead_line = [0];
+        immune_line = [0];
+
+        let plotctx = document.getElementById('plotcanvas').getContext('2d');
+        plotctx.canvas.height = plotctx.canvas.width * 3 / 4;
+
+        paused = false;
+        last_update = Date.now();
+        window.requestAnimationFrame(update);
+    }
+
+    function pause() {
+        paused = !paused;
+        let btn_pause = document.getElementById('pause');
+        if (!paused) {
+            btn_pause.textContent = 'Pause';
+            last_update = Date.now();
+            window.requestAnimationFrame(update);
+        } else {
+            btn_pause.textContent = 'Continue';
+        }
+    }
+
+    function vaccinate() {
+        let was_playing = !paused;
+        if (was_playing)
+            pause();
+        alert('There is no vaccine, yet.');
+        if (was_playing)
+            pause();
+    }
+
+    function update() {
+        total_time += Date.now() - last_update;
+        last_update = Date.now();
+        let ctx = document.getElementById('simcanvas').getContext('2d');
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        let alive_count = 0;
+        let never_sick_count = 0;
+        let sick_with_symptoms_count = 0;
+        let sick_count = 0;
+        let dead_count = 0;
+        let immune_count = 0;
+        let r_zero = 0;
+
+        let side = Math.sqrt(ctx.canvas.width * ctx.canvas.height) / 300;
+
+        for (let i = 0; i < persons.length; ++i) {
+            let person = persons[i];
+            person.update(ctx, mobility_factor(), side);
+        }
+
+        let contagion_distance = side * 2;
+        for (let i = 0; i < persons.length; ++i) {
+            let person = persons[i];
+            if (person.status === SICK_STATE) {
+                for (let j = 0; j < persons.length; ++j) {
+                    let other_person = persons[j];
+                    if (other_person.status === HEALTY_STATE) {
+                        let dist = Math.abs(person.x - other_person.x) + Math.abs(person.y - other_person.y);
+                        if (dist <= contagion_distance) {
+                            let threshold = contagion_by_asymptomatic_prob();
+                            if (person.has_symptoms)
+                                threshold = contagion_by_symptomatic_prob();
+                            if (Math.random() < threshold) {
+                                person.add_infected();
+                                other_person.got_sick();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (let i = 0; i < persons.length; ++i) {
+            let person = persons[i];
+            if (person.status === DEAD_STATE)
+                dead_count += 1;
+            else {
+                alive_count += 1;
+                if (person.status === SICK_STATE) {
+                    if (person.has_symptoms) {
+                        sick_with_symptoms_count += 1;
+                        r_zero += person.infected_persons * (sickness_duration * 1000 / (total_time - person.sick_time));
+                    }
+                    sick_count += 1;
+                } else if (person.status === IMMUNE_STATE)
+                    immune_count += 1;
+                else if (person.status === HEALTY_STATE)
+                    never_sick_count += 1;
+            }
+        }
+
+        if (sick_with_symptoms_count > 0)
+            r_zero = Math.floor((r_zero / sick_with_symptoms_count) * 10) / 10;
+        else
+            r_zero = "n/a";
+
+        document.getElementById('alive_count').value = alive_count;
+        document.getElementById('never_sick_count').value = never_sick_count;
+        document.getElementById('sick_with_symptoms_count').value = sick_with_symptoms_count;
+        document.getElementById('sick_count').value = sick_count;
+        document.getElementById('dead_count').value = dead_count;
+        document.getElementById('immune_count').value = immune_count;
+        document.getElementById('r_zero').value = r_zero;
+        document.getElementById('total_time').value = Math.floor(total_time / 100) / 10;
+
+        if (total_time - last_plot > 500) {
+            never_sick_line.push(never_sick_count);
+            sick_with_symptoms_line.push(sick_with_symptoms_count);
+            sick_line.push(sick_count);
+            dead_line.push(dead_count);
+            immune_line.push(immune_count);
+            let xsize = 240;
+            let ysize = person_count;
+            let plotctx = document.getElementById('plotcanvas').getContext('2d');
+            plotctx.globalCompositeOperation = 'destination-over';
+            plotctx.clearRect(0, 0, plotctx.canvas.width, plotctx.canvas.height);
+            plot(plotctx, xsize, ysize, HEALTY_COLOR, never_sick_line);
+            plot(plotctx, xsize, ysize, DEAD_COLOR, dead_line);
+            plot(plotctx, xsize, ysize, IMMUNE_COLOR, immune_line);
+            plot(plotctx, xsize, ysize, SICK_SYMPTOMS_COLOR, sick_with_symptoms_line);
+            plot(plotctx, xsize, ysize, SICK_NO_SYMPTOMS_COLOR, sick_line);
+            last_plot = total_time;
+        }
+
+        if (!paused)
+            window.requestAnimationFrame(update);
+    }
+
+    function plot(ctx, xsize, ysize, color, data) {
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        let to_plot = Math.min(xsize, data.length);
+        let shift = Math.max(0, xsize - to_plot);
+        let start = Math.max(0, data.length - xsize);
+        for (let i = 0; i < to_plot; ++i) {
+            let x = (shift + i) / xsize * ctx.canvas.width;
+            let y = ctx.canvas.height - (data[start + i] / ysize * ctx.canvas.height);
+            ctx.lineTo(x, y)
+        }
+        ctx.stroke();
+    }
+
+    function ready() {
+        reset();
+        let img = document.createElement("img");
+        img.src = "https://hitcounter.pythonanywhere.com/count/tag.svg?url=https://aesuli.github.io/lockdownsimulator/";
+        img.alt = "Hits";
+        img.crossOrigin = "anonymous";
+        img.referrerPolicy = "no-referrer";
+        document.getElementById("counter").append(img);
+    }
+</script>
+</body>
+</html>
