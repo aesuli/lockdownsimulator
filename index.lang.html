@@ -36,6 +36,7 @@
             display: inline-block;
             padding: 0;
         }
+
     </style>
 </head>
 <body style="height: 100%; width: 100%; background-color:darkgray;" onload="ready()">
@@ -51,7 +52,7 @@
                 {%unsupported%}
             </canvas>
             <div><label for="alive_count">{%alive%}</label><input size="5" id="alive_count" type="text"
-                                                                            readonly/>
+                                                                  readonly/>
                 <label for="never_sick_count">{%never_sick%} <span
                         style="background-color: #F0C200;">&nbsp;&nbsp;&nbsp;</span></label>
                 <input size="5" id="never_sick_count" type="text" readonly/>
@@ -67,7 +68,8 @@
                 <label for="immune_count">{%immune%} <span
                         style="background-color: #B3E0B9;">&nbsp;&nbsp;&nbsp;</span></label>
                 <input id="immune_count" size="5" type="text" readonly/>
-                <label for="dead_count">{%dead%}<span style="background-color: #363636;">&nbsp;&nbsp;&nbsp;</span></label>
+                <label for="dead_count">{%dead%}<span
+                        style="background-color: #363636;">&nbsp;&nbsp;&nbsp;</span></label>
                 <input id="dead_count" size="5" type="text" readonly/>
             </div>
             <div>
@@ -79,7 +81,7 @@
             <div class="block_head">{%init_sim%}:</div>
             <div><label for="population">{%population%}</label>
                 <input id="population" type="number" style="width: 4em;" value="1000" min="100" max="10000" step="100"/>
-                <label for="sickness_duration">{%sickness_duration%}</label>
+                <label for="sickness_duration"><abbr title="{%sickness_model%}">{%sickness_duration%}</abbr></label>
                 <input id="sickness_duration" type="number" style="width: 3em;" value="30" min="2" max="500" step="1"/>
             </div>
             <div>
@@ -128,6 +130,7 @@
             </div>
             <div>
                 <button id="pause" onclick="pause()">{%pause%}</button>
+                <button id="one_sick" onclick="one_sick()">{%one_sick%}</button>
                 <button id="vaccinate" onclick="vaccinate()">{%vaccinate%}</button>
             </div>
         </div>
@@ -318,11 +321,9 @@
             persons.push(new Person(ctx));
         }
 
-        persons[0].got_sick();
-
         never_sick_line = [person_count];
         sick_with_symptoms_line = [0];
-        sick_line = [1];
+        sick_line = [0];
         dead_line = [0];
         immune_line = [0];
 
@@ -344,6 +345,11 @@
         } else {
             btn_pause.textContent = '{%continue%}';
         }
+    }
+
+    function one_sick() {
+        let i = Math.floor(Math.random()*person_count);
+        persons[i].got_sick();
     }
 
     function vaccinate() {
@@ -478,6 +484,7 @@
         img.referrerPolicy = "no-referrer";
         document.getElementById("counter").append(img);
     }
+
 </script>
 </body>
 </html>
