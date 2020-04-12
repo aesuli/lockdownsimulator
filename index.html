@@ -187,7 +187,7 @@
             return 0;
     }
 
-    const steps_per_sec = 5;
+    const steps_per_sec = 10;
 
     class Person {
         constructor(ctx) {
@@ -266,31 +266,25 @@
             ctx.arc(this._x, this._y, side, 0, 2 * Math.PI);
             ctx.fill();
             if (this._status !== DEAD_STATE && !(this._status === SICK_STATE && this._has_symptoms)) {
-                // let steps = Math.floor((total_time - this._last_update) / 1000 * steps_per_sec);
-                // if (steps > 0) {
-                //     for (let i = 0; i < steps; ++i) {
-                        if (Math.random() < 0.5)
-                            this._direction = (this._direction + 3) % 4;
-                        else
-                            this._direction = (this._direction + 1) % 4;
-                        if (this._direction === 0)
-                            this._x = (this._x + Math.exp(this._speed * mobility_factor)) % ctx.canvas.width;
-                        else if (this._direction === 2)
-                            this._x = (this._x - Math.exp(this._speed * mobility_factor) + ctx.canvas.width) % ctx.canvas.width;
-                        else if (this._direction === 1)
-                            this._y = (this._y + Math.exp(this._speed * mobility_factor)) % ctx.canvas.height;
-                        else if (this._direction === 3)
-                            this._y = (this._y - Math.exp(this._speed * mobility_factor) + ctx.canvas.height) % ctx.canvas.height;
-                    // }
-                    this._last_update = total_time;
-                // }
-            } else
-                this._last_update = total_time;
+                if (Math.random() < 0.5)
+                    this._direction = (this._direction + 3) % 4;
+                else
+                    this._direction = (this._direction + 1) % 4;
+                if (this._direction === 0)
+                    this._x = (this._x + Math.exp(this._speed * mobility_factor)) % ctx.canvas.width;
+                else if (this._direction === 2)
+                    this._x = (this._x - Math.exp(this._speed * mobility_factor) + ctx.canvas.width) % ctx.canvas.width;
+                else if (this._direction === 1)
+                    this._y = (this._y + Math.exp(this._speed * mobility_factor)) % ctx.canvas.height;
+                else if (this._direction === 3)
+                    this._y = (this._y - Math.exp(this._speed * mobility_factor) + ctx.canvas.height) % ctx.canvas.height;
+            }
+            this._last_update = total_time;
         }
     }
 
     let persons = null;
-    let paused = null;
+    let paused = true;
 
     let never_sick_line = null;
     let sick_with_symptoms_line = null;
@@ -330,9 +324,10 @@
         let plotctx = document.getElementById('plotcanvas').getContext('2d');
         plotctx.canvas.height = plotctx.canvas.width * 3 / 4;
 
-        paused = false;
-        last_update = Date.now();
-        window.requestAnimationFrame(update);
+        if(paused) {
+            paused = false;
+            update();
+        }
     }
 
     function pause() {
