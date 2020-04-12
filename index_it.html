@@ -187,7 +187,7 @@
             return 0;
     }
 
-    const steps_per_sec = 10;
+    const steps_per_sec = 5;
 
     class Person {
         constructor(ctx) {
@@ -266,9 +266,9 @@
             ctx.arc(this._x, this._y, side, 0, 2 * Math.PI);
             ctx.fill();
             if (this._status !== DEAD_STATE && !(this._status === SICK_STATE && this._has_symptoms)) {
-                let steps = Math.floor((total_time - this._last_update) / 1000 * steps_per_sec);
-                if (steps > 0) {
-                    for (let i = 0; i < steps; ++i) {
+                // let steps = Math.floor((total_time - this._last_update) / 1000 * steps_per_sec);
+                // if (steps > 0) {
+                //     for (let i = 0; i < steps; ++i) {
                         if (Math.random() < 0.5)
                             this._direction = (this._direction + 3) % 4;
                         else
@@ -281,9 +281,9 @@
                             this._y = (this._y + Math.exp(this._speed * mobility_factor)) % ctx.canvas.height;
                         else if (this._direction === 3)
                             this._y = (this._y - Math.exp(this._speed * mobility_factor) + ctx.canvas.height) % ctx.canvas.height;
-                    }
+                    // }
                     this._last_update = total_time;
-                }
+                // }
             } else
                 this._last_update = total_time;
         }
@@ -457,8 +457,12 @@
             last_plot = total_time;
         }
 
-        if (!paused)
-            window.requestAnimationFrame(update);
+        let wait_for = Math.max(0,1000/steps_per_sec-(Date.now()-last_update));
+
+        setTimeout(function(){
+            if (!paused)
+                window.requestAnimationFrame(update);
+        }, wait_for);
     }
 
     function plot(ctx, xsize, ysize, color, data) {
