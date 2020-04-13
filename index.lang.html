@@ -326,10 +326,30 @@
 
         if(paused) {
             paused = false;
-            btn_pause.textContent = '{%continue%}';
+            let btn_pause = document.getElementById('pause');
+            btn_pause.textContent = '{%pause%}';
             update();
         }
     }
+
+    function blinkButton() {
+        let btn_sick = document.getElementById('one_sick');
+        if(sick_line!=null && sick_line[sick_line.length-1]>0) {
+            btn_sick.style.color = '';
+            setTimeout(() => {blinkButton();}, 1000);
+        }
+        else {
+            if(btn_sick.style.color == 'red'){
+                btn_sick.style.color = '';
+                setTimeout(() => {blinkButton();}, 1000);
+            } else {
+                btn_sick.style.color = 'red';
+                setTimeout(() => {blinkButton();}, 1000);
+            }
+        }
+    }
+
+    blinkButton();
 
     function pause() {
         paused = !paused;
