@@ -379,7 +379,7 @@
 
     function vaccinate() {
         let vaccine_div = document.getElementById('vaccine');
-        if(vaccine_div.style.display=='none')
+        if(vaccine_div.style.display=='' or vaccine_div.style.display=='none')
             vaccine_div.style.display = 'block';
         else
             vaccine_div.style.display = 'none';
