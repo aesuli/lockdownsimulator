@@ -37,11 +37,22 @@
             padding: 0;
         }
 
+        .centered {
+            background: white;
+            display: none;
+            padding: 20px;
+            border: 5px solid red;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body style="height: 100%; width: 100%; background-color:darkgray;" onload="ready()">
 
 <div style="display: flex">
+    <div id="vaccine" class="centered" onclick="vaccinate()">There is no vaccine, yet.</div>
     <canvas id="simcanvas" style="border:1px solid #444444;background-color: white;">
         Your browser does not support the HTML5 canvas tag.
     </canvas>
@@ -324,12 +335,8 @@
         let plotctx = document.getElementById('plotcanvas').getContext('2d');
         plotctx.canvas.height = plotctx.canvas.width * 3 / 4;
 
-        if(paused) {
-            paused = false;
-            let btn_pause = document.getElementById('pause');
-            btn_pause.textContent = 'Pause';
-            update();
-        }
+        if(paused)
+            pause();
     }
 
     function blinkButton() {
@@ -357,7 +364,7 @@
         if (!paused) {
             btn_pause.textContent = 'Pause';
             last_update = Date.now();
-            window.requestAnimationFrame(update);
+            window.requestAnimationFrame(function() {update(true);});
         } else {
             btn_pause.textContent = 'Continue';
         }
@@ -366,18 +373,19 @@
     function one_sick() {
         let i = Math.floor(Math.random()*person_count);
         persons[i].got_sick();
+        if(paused)
+            update(false);
     }
 
     function vaccinate() {
-        let was_playing = !paused;
-        if (was_playing)
-            pause();
-        alert('There is no vaccine, yet.');
-        if (was_playing)
-            pause();
+        let vaccine_div = document.getElementById('vaccine');
+        if(vaccine_div.style.display=='none')
+            vaccine_div.style.display = 'block';
+        else
+            vaccine_div.style.display = 'none';
     }
 
-    function update() {
+    function update(loop) {
         total_time += Date.now() - last_update;
         last_update = Date.now();
         let ctx = document.getElementById('simcanvas').getContext('2d');
@@ -473,12 +481,14 @@
             last_plot = total_time;
         }
 
-        let wait_for = Math.max(0,1000/steps_per_sec-(Date.now()-last_update));
+        if(loop) {
+            let wait_for = Math.max(0,1000/steps_per_sec-(Date.now()-last_update));
 
-        setTimeout(function(){
-            if (!paused)
-                window.requestAnimationFrame(update);
-        }, wait_for);
+            setTimeout(function(){
+                if (!paused)
+                    window.requestAnimationFrame(function() {update(true);});
+            }, wait_for);
+        }
     }
 
     function plot(ctx, xsize, ysize, color, data) {
