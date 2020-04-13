@@ -335,23 +335,28 @@
         let plotctx = document.getElementById('plotcanvas').getContext('2d');
         plotctx.canvas.height = plotctx.canvas.width * 3 / 4;
 
-        if(paused)
+        if (paused)
             pause();
     }
 
     function blinkButton() {
         let btn_sick = document.getElementById('one_sick');
-        if(sick_line!=null && sick_line[sick_line.length-1]>0) {
+        if (sick_line != null && sick_line[sick_line.length - 1] > 0) {
             btn_sick.style.color = '';
-            setTimeout(() => {blinkButton();}, 1000);
-        }
-        else {
-            if(btn_sick.style.color == 'red'){
+            setTimeout(() => {
+                blinkButton();
+            }, 1000);
+        } else {
+            if (btn_sick.style.color == 'red') {
                 btn_sick.style.color = '';
-                setTimeout(() => {blinkButton();}, 1000);
+                setTimeout(() => {
+                    blinkButton();
+                }, 1000);
             } else {
                 btn_sick.style.color = 'red';
-                setTimeout(() => {blinkButton();}, 1000);
+                setTimeout(() => {
+                    blinkButton();
+                }, 1000);
             }
         }
     }
@@ -364,22 +369,24 @@
         if (!paused) {
             btn_pause.textContent = '{%pause%}';
             last_update = Date.now();
-            window.requestAnimationFrame(function() {update(true);});
+            window.requestAnimationFrame(function () {
+                update(true);
+            });
         } else {
             btn_pause.textContent = '{%continue%}';
         }
     }
 
     function one_sick() {
-        let i = Math.floor(Math.random()*person_count);
+        let i = Math.floor(Math.random() * person_count);
         persons[i].got_sick();
-        if(paused)
+        if (paused)
             update(false);
     }
 
     function vaccinate() {
         let vaccine_div = document.getElementById('vaccine');
-        if(vaccine_div.style.display=='' or vaccine_div.style.display=='none')
+        if (vaccine_div.style.display == '' || vaccine_div.style.display == 'none')
             vaccine_div.style.display = 'block';
         else
             vaccine_div.style.display = 'none';
@@ -481,12 +488,14 @@
             last_plot = total_time;
         }
 
-        if(loop) {
-            let wait_for = Math.max(0,1000/steps_per_sec-(Date.now()-last_update));
+        if (loop) {
+            let wait_for = Math.max(0, 1000 / steps_per_sec - (Date.now() - last_update));
 
-            setTimeout(function(){
+            setTimeout(function () {
                 if (!paused)
-                    window.requestAnimationFrame(function() {update(true);});
+                    window.requestAnimationFrame(function () {
+                        update(true);
+                    });
             }, wait_for);
         }
     }
