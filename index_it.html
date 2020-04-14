@@ -311,10 +311,10 @@
         last_plot = total_time;
 
         let simcanvas = document.getElementById('simcanvas');
-        simcanvas.style.width = window.innerWidth * .7 + 'px';
+        simcanvas.style.width = ((window.innerWidth * .7)-10) + 'px';
         simcanvas.style.height = window.innerHeight - 80 + 'px';
         let ctx = simcanvas.getContext('2d');
-        ctx.canvas.width = window.innerWidth * .7;
+        ctx.canvas.width = (window.innerWidth * .7)-10;
         ctx.canvas.height = window.innerHeight - 80;
 
         person_count = document.getElementById('population').value;
