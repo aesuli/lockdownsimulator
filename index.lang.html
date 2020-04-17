@@ -15,6 +15,16 @@
             margin: 0;
         }
 
+        h1 {
+            border: 1px solid #444444;
+            background-color: white;
+            margin: 0px 0px 5px 0px;
+            padding: 5px 5px 10px 20px;
+            color: darkslategray;
+            font-style: italic;
+            text-shadow: 1px 1px 2px #888888;
+        }
+
         div {
             padding: 5px;
         }
@@ -24,16 +34,9 @@
             margin-right: 2px;
         }
 
-        #simcanvas {
+        canvas {
             border: 1px solid #444444;
             background-color: white;
-            width: 100%;
-            margin: 5px;
-        }
-        
-        #plotcanvas {
-            border:1px solid #444444;
-            background-color: white; 
             width: 100%;
         }
 
@@ -81,9 +84,12 @@
 
 <body onload="ready()">
     <div id="vaccine" class="centered" onclick="vaccinate()">{%no_vaccine%}</div>
-    <canvas id="simcanvas">
-        {%unsupported%}
-    </canvas>
+    <div>
+        <h1>{%title%}</h1>
+        <canvas id="simcanvas">
+            {%unsupported%}
+        </canvas>
+    </div>
     <div id="side">
         <div class="block">
             <canvas id="plotcanvas">
