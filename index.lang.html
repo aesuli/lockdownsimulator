@@ -83,7 +83,6 @@
 </head>
 
 <body onload="ready()">
-    <div id="vaccine" class="centered" onclick="vaccinate()">{%no_vaccine%}</div>
     <div>
         <h1>{%title%}</h1>
         <canvas id="simcanvas">
@@ -104,8 +103,10 @@
                 <input id="sick_with_symptoms_count" size="5" type="text" readonly />
             </div>
             <div>
-                <label for="immune_count">{%immune%} <span style="background-color: #B3E0B9;">&nbsp;&nbsp;&nbsp;</span></label>
+                <label for="immune_count">{%immune%} <span style="background-color: #63db4d">&nbsp;&nbsp;&nbsp;</span></label>
                 <input id="immune_count" size="5" type="text" readonly />
+                <label for="vaccinated_count">{%vaccinated%} <span style="background-color: #6a79ff;">&nbsp;&nbsp;&nbsp;</span></label>
+                <input id="vaccinated_count" size="5" type="text" readonly />
                 <label for="dead_count">{%dead%}<span style="background-color: #363636;">&nbsp;&nbsp;&nbsp;</span></label>
                 <input id="dead_count" size="5" type="text" readonly />
             </div>
@@ -168,7 +169,7 @@
             <div>
                 <button id="pause" onclick="pause()">{%pause%}</button>
                 <button id="one_sick" onclick="one_sick()">{%one_sick%}</button>
-                <button id="vaccinate" onclick="vaccinate()">{%vaccinate%}</button>
+                <button id="vaccinate" onclick="vaccinate()"><abbr title="{%efficacy%}">{%vaccinate%}</abbr></button>
             </div>
         </div>
         <div id="footer">
@@ -183,12 +184,16 @@
         const SICK_STATE = 1;
         const IMMUNE_STATE = 2;
         const DEAD_STATE = 3;
+        const VACCINATED_STATE = 4;
+        
+        const VACCINE_EFFICACY = 0.8;
 
         const SICK_SYMPTOMS_COLOR = 'rgb(251,85,255)';
         const SICK_NO_SYMPTOMS_COLOR = 'rgb(226,1,14)';
         const HEALTY_COLOR = 'rgb(240,194,0)';
-        const IMMUNE_COLOR = 'rgb(179,224,185)';
+        const IMMUNE_COLOR = 'rgb(99, 219, 77)';
         const DEAD_COLOR = 'rgb(54,54,54)';
+        const VACCINATED_COLOR = 'rgb(106, 121, 255)'
 
         let sickness_duration = null;
         let person_count = null;
@@ -256,6 +261,12 @@
                 this._status = SICK_STATE;
                 this._sick_time = total_time;
             }
+            
+            vaccinate() {
+                if(this.status==HEALTY_STATE && Math.random()<VACCINE_EFFICACY) {
+                    this._status = VACCINATED_STATE;
+                }
+            }
 
             get sick_time() {
                 return this._sick_time;
@@ -298,6 +309,8 @@
                     ctx.fillStyle = IMMUNE_COLOR;
                 else if (this._status === DEAD_STATE)
                     ctx.fillStyle = DEAD_COLOR;
+                else if (this.status == VACCINATED_STATE)
+                    ctx.fillStyle = VACCINATED_COLOR;
                 ctx.beginPath();
                 ctx.arc(this._x, this._y, side, 0, 2 * Math.PI);
                 ctx.fill();
@@ -327,6 +340,7 @@
         let sick_line = null;
         let dead_line = null;
         let immune_line = null;
+        let vaccinated_line = null;
         let last_plot = null;
 
         let last_update = null;
@@ -356,6 +370,7 @@
             sick_line = [0];
             dead_line = [0];
             immune_line = [0];
+            vaccinated_line = [0];
 
             let plotctx = document.getElementById('plotcanvas').getContext('2d');
             plotctx.canvas.height = plotctx.canvas.width * 3 / 4;
@@ -410,11 +425,15 @@
         }
 
         function vaccinate() {
-            let vaccine_div = document.getElementById('vaccine');
-            if (vaccine_div.style.display == '' || vaccine_div.style.display == 'none')
-                vaccine_div.style.display = 'block';
-            else
-                vaccine_div.style.display = 'none';
+            let to_vaccinate = Math.floor(0.08 * person_count);
+            for (let j = 0; j < person_count; ++j) {
+                if(persons[j].status==HEALTY_STATE) {
+                    persons[j].vaccinate();
+                    to_vaccinate -= 1;
+                }
+                if (to_vaccinate<=0)
+                    break;
+            }
         }
 
         function update(loop) {
@@ -429,6 +448,7 @@
             let sick_with_symptoms_count = 0;
             let sick_count = 0;
             let dead_count = 0;
+            let vaccinated_count = 0;
             let immune_count = 0;
             let r_zero = 0;
 
@@ -475,7 +495,10 @@
                         sick_count += 1;
                     } else if (person.status === IMMUNE_STATE)
                         immune_count += 1;
-                    else if (person.status === HEALTY_STATE)
+                    else if (person.status === VACCINATED_STATE) {
+                        vaccinated_count += 1;
+                        never_sick_count += 1;
+                    } else if (person.status === HEALTY_STATE)
                         never_sick_count += 1;
                 }
             }
@@ -491,6 +514,7 @@
             document.getElementById('sick_count').value = sick_count;
             document.getElementById('dead_count').value = dead_count;
             document.getElementById('immune_count').value = immune_count;
+            document.getElementById('vaccinated_count').value = vaccinated_count;
             document.getElementById('r_zero').value = r_zero;
             document.getElementById('total_time').value = Math.floor(total_time / 100) / 10;
 
@@ -500,6 +524,7 @@
                 sick_line.push(sick_count);
                 dead_line.push(dead_count);
                 immune_line.push(immune_count);
+                vaccinated_line.push(vaccinated_count);
                 let xsize = 240;
                 let ysize = person_count;
                 let plotctx = document.getElementById('plotcanvas').getContext('2d');
@@ -508,6 +533,7 @@
                 plot(plotctx, xsize, ysize, HEALTY_COLOR, never_sick_line);
                 plot(plotctx, xsize, ysize, DEAD_COLOR, dead_line);
                 plot(plotctx, xsize, ysize, IMMUNE_COLOR, immune_line);
+                plot(plotctx, xsize, ysize, VACCINATED_COLOR, vaccinated_line);
                 plot(plotctx, xsize, ysize, SICK_SYMPTOMS_COLOR, sick_with_symptoms_line);
                 plot(plotctx, xsize, ysize, SICK_NO_SYMPTOMS_COLOR, sick_line);
                 last_plot = total_time;
